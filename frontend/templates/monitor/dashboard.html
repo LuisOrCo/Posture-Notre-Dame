@@ -1,49 +1,125 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Dashboard - ErgoMonitor{% endblock %}
+{% block title %}Panel Clínico - Posture Notre Dame{% endblock %}
 
 {% block extra_css %}
 <style>
   .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    max-width: 1100px;
-    margin: 2rem auto;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 1.75rem;
+    max-width: 1200px;
+    margin: 1.5rem auto 3rem;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 960px) {
     .dashboard-grid { grid-template-columns: 1fr; }
   }
 
-  /* Panel de cámara */
-  .camera-panel {
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-
-  .camera-panel h2 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
+  /* ─── Banner de Bienvenida y Salud ─────────────────────────────────── */
+  .welcome-card {
+    background: linear-gradient(135deg, #133a27 0%, #1e5a38 50%, #2d8653 100%);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 2rem 2.25rem;
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .welcome-card::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    bottom: -40px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(216, 243, 220, 0.15) 0%, rgba(216, 243, 220, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .welcome-text h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .welcome-text p {
+    opacity: 0.92;
+    font-size: 0.95rem;
+    max-width: 680px;
+    line-height: 1.55;
+    font-weight: 400;
+  }
+
+  .welcome-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.65rem;
+  }
+
+  /* ─── Panel de Cámara / Biometría ──────────────────────────────────── */
+  .camera-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .panel-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-deep);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .panel-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--primary-light);
+    background: var(--primary-subtle);
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    border: 1px solid var(--primary-border);
   }
 
   .video-wrapper {
     position: relative;
-    background: #0f172a;
-    border-radius: 0.5rem;
+    background: #0d1e16;
+    border-radius: var(--radius-md);
     overflow: hidden;
     aspect-ratio: 4/3;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 2px solid var(--border-color);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
   }
 
   #camera-feed {
@@ -57,13 +133,54 @@
   .video-placeholder {
     position: absolute;
     text-align: center;
-    color: #64748b;
+    color: #a3c4b2;
     pointer-events: none;
+    padding: 1.5rem;
   }
 
-  .video-placeholder span { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+  .video-placeholder-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+    color: #d8f3dc;
+  }
 
-  /* Spinner de carga */
+  .video-placeholder p {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .video-placeholder span {
+    font-size: 0.8rem;
+    opacity: 0.75;
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  /* Overlay de guías ergonómicas */
+  .camera-overlay-guide {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(19, 58, 39, 0.75);
+    backdrop-filter: blur(4px);
+    color: #d8f3dc;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid rgba(216, 243, 220, 0.2);
+  }
+
   .spinner {
     position: absolute;
     top: 50%;
@@ -71,203 +188,308 @@
     transform: translate(-50%, -50%);
     display: none;
   }
+
   .spinner-ring {
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(255,255,255,0.2);
-    border-top-color: white;
+    width: 44px;
+    height: 44px;
+    border: 3.5px solid rgba(216, 243, 220, 0.25);
+    border-top-color: #52b788;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
+
   @keyframes spin { to { transform: rotate(360deg); } }
 
   #capture-canvas { display: none; }
 
   .camera-controls {
     display: flex;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    gap: 0.85rem;
+    margin-top: 1.25rem;
   }
 
   .camera-controls button {
     flex: 1;
-    padding: 0.625rem 1rem;
-    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
     border: none;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s, transform 0.1s;
+    font-size: 0.925rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
   }
-  .camera-controls button:active:not(:disabled) { transform: scale(0.97); }
 
-  #start-btn { background-color: var(--primary-color); color: white; }
-  #start-btn:hover:not(:disabled) { background-color: var(--primary-hover); }
-  #start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #start-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+    box-shadow: 0 3px 8px rgba(30, 90, 56, 0.2);
+  }
+  #start-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(30, 90, 56, 0.25);
+  }
+  #start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-  #stop-btn { background-color: var(--danger-color); color: white; }
-  #stop-btn:hover:not(:disabled) { background-color: #dc2626; }
+  #stop-btn {
+    background: white;
+    color: var(--health-bad);
+    border: 1.5px solid var(--health-bad-border);
+  }
+  #stop-btn:hover:not(:disabled) {
+    background: var(--health-bad-bg);
+  }
   #stop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Panel de métricas */
+  /* ─── Panel de Métricas / Diagnóstico ──────────────────────────────── */
   .metrics-panel {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   .metric-card {
-    background: white;
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    transition: box-shadow 0.2s;
+    border-radius: var(--radius-lg);
+    padding: 1.4rem 1.6rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
   }
-  .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+  .metric-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-border);
+  }
+
+  .metric-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.65rem;
+  }
 
   .metric-card h3 {
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .metric-value-wrapper {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
   }
 
   .metric-value {
-    font-size: 1.75rem;
+    font-size: 2.1rem;
     font-weight: 800;
-    color: var(--text-color);
-    line-height: 1;
+    color: var(--primary-deep);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
     transition: color 0.3s;
   }
 
   .metric-sub {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: var(--text-muted);
     margin-top: 0.35rem;
+    font-weight: 500;
   }
 
-  /* Status badge */
+  /* ─── Badges de Estado ─────────────────────────────────────────────── */
   .status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.375rem 0.75rem;
+    gap: 0.45rem;
+    padding: 0.4rem 0.9rem;
     border-radius: 9999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: background-color 0.3s, color 0.3s;
+    font-size: 0.825rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
-  .status-badge::before { content: "●"; }
-  .status-idle { background: #f1f5f9; color: var(--text-muted); }
-  .status-info { background: #eff6ff; color: #1d4ed8; }
-  .status-good { background: #ecfdf5; color: #065f46; }
-  .status-bad  { background: #fef2f2; color: #991b1b; }
 
-  /* Indicador de conexión */
+  .status-badge::before { content: "●"; font-size: 0.8rem; }
+  .status-idle { background: var(--surface-muted); color: var(--text-muted); border: 1px solid var(--border-color); }
+  .status-info { background: var(--primary-subtle); color: var(--primary-deep); border: 1px solid var(--primary-border); }
+  .status-good { background: var(--health-good-bg); color: var(--health-good); border: 1px solid var(--health-good-border); }
+  .status-bad  { background: var(--health-bad-bg); color: var(--health-bad); border: 1px solid var(--health-bad-border); }
+
   .conn-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.2rem 0.6rem;
+    font-size: 0.775rem;
+    font-weight: 700;
+    padding: 0.3rem 0.85rem;
     border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
   }
-  .conn-online  { background: #ecfdf5; color: #065f46; }
-  .conn-offline { background: #fef2f2; color: #991b1b; }
+  .conn-online  { background: rgba(216, 243, 220, 0.25); color: #d8f3dc; border: 1px solid rgba(216, 243, 220, 0.4); }
+  .conn-offline { background: rgba(254, 202, 202, 0.25); color: #fecaca; border: 1px solid rgba(254, 202, 202, 0.4); }
 
-  /* Alerta dinámica */
+  /* ─── Alertas ───────────────────────────────────────────────────────── */
   #alert-box {
-    border-radius: 0.5rem;
-    padding: 0.875rem 1rem;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
     font-size: 0.9rem;
+    font-weight: 600;
     display: none;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.25s ease;
   }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-  .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-  .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .alert-warning { background: var(--health-warn-bg); color: var(--health-warn); border: 1.5px solid #fde68a; }
+  .alert-error   { background: var(--health-bad-bg); color: var(--health-bad); border: 1.5px solid var(--health-bad-border); }
 
-  /* Estadísticas acumuladas */
+  /* ─── Estadísticas Ergonómicas ─────────────────────────────────────── */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    margin-top: 0.25rem;
+    gap: 0.85rem;
+    margin-top: 0.5rem;
   }
 
-  .stat-item { text-align: center; }
+  .stat-item {
+    background: var(--surface-muted);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 0.6rem;
+    text-align: center;
+  }
+
   .stat-item .stat-num {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--text-color);
+    color: var(--primary-deep);
     display: block;
+    line-height: 1.1;
   }
+
   .stat-item .stat-label {
     font-size: 0.72rem;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+    display: block;
   }
 
-  /* Contador de sesión */
+  /* ─── Sesión & Temporizador ────────────────────────────────────────── */
   .session-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    gap: 1rem;
   }
 
   .timer-display {
-    font-family: 'Courier New', monospace;
-    font-size: 1.4rem;
-    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-family: 'Plus Jakarta Sans', monospace;
+    font-size: 1.35rem;
+    font-weight: 800;
     color: var(--primary-color);
-    letter-spacing: 0.05em;
+    background: var(--primary-subtle);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--primary-border);
   }
 
-  /* Banner de bienvenida */
-  .welcome-card {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: white;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    grid-column: 1 / -1;
+  /* Tarjeta de Recomendación Ergonómica */
+  .health-tip-card {
+    background: #fafdfb;
+    border: 1px dashed var(--accent-sage);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
-  .welcome-card h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
-  .welcome-card p  { opacity: 0.85; font-size: 0.95rem; }
+
+  .health-tip-icon {
+    color: var(--primary-light);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .health-tip-content h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary-deep);
+    margin-bottom: 0.2rem;
+  }
+
+  .health-tip-content p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-grid">
 
-  <!-- Banner de bienvenida -->
+  <!-- Banner Clínico de Bienvenida -->
   <div class="welcome-card">
-    <div>
-      <h1>¡Hola, {{ user.username }}! 🧘 Panel de Monitoreo Ergonómico</h1>
-      <p>Activa tu cámara para comenzar el análisis de postura en tiempo real. Recibirás alertas cuando tu inclinación supere el umbral ergonómico.</p>
+    <div class="welcome-text">
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        Panel de Salud &bull; Posture Notre Dame
+      </h1>
+      <p>Bienvenido, <strong>{{ user.username }}</strong>. El sistema evalúa continuamente la alineación de tu cuello y hombros mediante visión artificial para proteger tu salud postural y prevenir lesiones laborales.</p>
     </div>
-    <span id="conn-indicator" class="conn-badge conn-offline">● Sin conexión</span>
+    <div class="welcome-badges">
+      <span id="conn-indicator" class="conn-badge conn-offline">● Sin conexión</span>
+      <span class="panel-tag" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.25);">Protocolo Ergonómico 15°</span>
+    </div>
   </div>
 
-  <!-- Panel izquierdo: Cámara -->
+  <!-- Panel izquierdo: Cámara & Análisis -->
   <div class="camera-panel">
-    <h2>📷 Captura de Cámara</h2>
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        Evaluación Biomecánica en Vivo
+      </div>
+      <span class="panel-tag">MediaPipe Vision</span>
+    </div>
 
     <div class="video-wrapper">
-      <video id="camera-feed" autoplay playsinline muted></video>
-      <div class="video-placeholder" id="video-placeholder">
-        <span>🎥</span>
-        <p>Haz clic en "Iniciar Cámara"</p>
+      <div class="camera-overlay-guide">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+        Sensor Activo
       </div>
-      <!-- Spinner visible mientras la cámara conecta -->
+
+      <video id="camera-feed" autoplay playsinline muted></video>
+
+      <div class="video-placeholder" id="video-placeholder">
+        <div class="video-placeholder-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 10l5 5-5 5"></path>
+            <path d="M4 4v7a4 4 0 0 0 4 4h12"></path>
+          </svg>
+        </div>
+        <p>Cámara en Espera</p>
+        <span>Haz clic en "Iniciar Monitoreo" para comenzar el análisis</span>
+      </div>
+
       <div class="spinner" id="cam-spinner">
         <div class="spinner-ring"></div>
       </div>
@@ -276,59 +498,93 @@
     <canvas id="capture-canvas"></canvas>
 
     <div class="camera-controls">
-      <button id="start-btn">▶ Iniciar Cámara</button>
-      <button id="stop-btn" disabled>⏹ Detener</button>
+      <button id="start-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Iniciar Monitoreo
+      </button>
+      <button id="stop-btn" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+        </svg>
+        Detener
+      </button>
     </div>
   </div>
 
-  <!-- Panel derecho: Métricas en tiempo real -->
+  <!-- Panel derecho: Métricas & Resultados Clínicos -->
   <div class="metrics-panel">
 
-    <!-- Estado del monitoreo -->
+    <!-- Estado de Salud y Diagnóstico -->
     <div class="metric-card">
-      <h3>Estado del Monitoreo</h3>
-      <span id="status-badge" class="status-badge status-idle">Inactivo</span>
+      <div class="metric-card-header">
+        <h3>Diagnóstico Postural</h3>
+        <span id="status-badge" class="status-badge status-idle">Inactivo</span>
+      </div>
+      <div class="metric-value-wrapper">
+        <div id="posture-value" class="metric-value" style="color: var(--text-light);">—</div>
+      </div>
+      <div id="posture-message" class="metric-sub">Inicia la sesión para recibir retroalimentación médica inmediata.</div>
     </div>
 
-    <!-- Postura actual -->
+    <!-- Ángulo de Inclinación -->
     <div class="metric-card">
-      <h3>Postura Actual</h3>
-      <div id="posture-value" class="metric-value" style="color: var(--text-muted);">—</div>
-      <div id="posture-message" class="metric-sub"></div>
+      <div class="metric-card-header">
+        <h3>Inclinación Cervical / Dorsal</h3>
+        <span class="panel-tag">Límite: &le; 15.0&deg;</span>
+      </div>
+      <div class="metric-value-wrapper">
+        <div id="angle-value" class="metric-value" style="color: var(--primary-deep);">—</div>
+      </div>
+      <div class="metric-sub">Cálculo del ángulo entre el eje auricular y la línea clavicular.</div>
     </div>
 
-    <!-- Ángulo de inclinación -->
+    <!-- Sesión de Trabajo Ergonómica -->
     <div class="metric-card">
-      <h3>Ángulo de Inclinación Cuello/Hombros</h3>
-      <div id="angle-value" class="metric-value" style="color: var(--text-muted);">—</div>
-      <div class="metric-sub">Umbral ergonómico: ≤ 15.0°</div>
-    </div>
-
-    <!-- Sesión con contador en tiempo real -->
-    <div class="metric-card">
-      <h3>Sesión</h3>
+      <div class="metric-card-header">
+        <h3>Jornada de Monitoreo</h3>
+      </div>
       <div class="session-row">
-        <div id="session-value" class="metric-value" style="font-size: 1rem; color: var(--text-muted);">Inactiva</div>
+        <div>
+          <div id="session-value" class="metric-value" style="font-size: 1.15rem; color: var(--text-muted);">Inactiva</div>
+          <div class="metric-sub" style="margin-top: 0.15rem;">Tiempo de postura evaluada</div>
+        </div>
         <span id="session-timer" class="timer-display">00:00:00</span>
       </div>
     </div>
 
-    <!-- Estadísticas acumuladas -->
+    <!-- Estadísticas Acumuladas -->
     <div class="metric-card">
-      <h3>📊 Estadísticas Acumuladas</h3>
+      <div class="metric-card-header">
+        <h3>Historial de Rendimiento Postural</h3>
+      </div>
       <div class="stats-grid">
         <div class="stat-item">
           <span id="stat-total" class="stat-num">—</span>
-          <span class="stat-label">Muestras</span>
+          <span class="stat-label">Evaluaciones</span>
         </div>
         <div class="stat-item">
-          <span id="stat-good-pct" class="stat-num" style="color: var(--success-color);">—</span>
-          <span class="stat-label">Buena</span>
+          <span id="stat-good-pct" class="stat-num" style="color: var(--health-good);">—</span>
+          <span class="stat-label">Saludable</span>
         </div>
         <div class="stat-item">
-          <span id="stat-bad-pct" class="stat-num" style="color: var(--danger-color);">—</span>
-          <span class="stat-label">Mala</span>
+          <span id="stat-bad-pct" class="stat-num" style="color: var(--health-bad);">—</span>
+          <span class="stat-label">Desalineada</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Recomendación Ergonómica Rápida -->
+    <div class="health-tip-card">
+      <div class="health-tip-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+      </div>
+      <div class="health-tip-content">
+        <h4>Consejo Ergonómico</h4>
+        <p>Mantén el borde superior de tu monitor al nivel de los ojos y la espalda apoyada firmemente sobre el respaldo lumbar.</p>
       </div>
     </div>
 
@@ -343,7 +599,6 @@
 <script>
   window.FASTAPI_URL = "{{ fastapi_url }}";
 
-  // Spinner: mostrar mientras el botón Iniciar está activo y cámara conectando
   const _startBtn = document.getElementById("start-btn");
   const _spinner  = document.getElementById("cam-spinner");
   if (_startBtn && _spinner) {
@@ -353,14 +608,13 @@
     });
   }
 
-  // Actualizar etiqueta de sesión cuando cambia el estado
   const _sessionValue = document.getElementById("session-value");
   const _startBtnObs  = document.getElementById("start-btn");
   const _stopBtnObs   = document.getElementById("stop-btn");
   if (_startBtnObs && _sessionValue) {
     _startBtnObs.addEventListener("click", () => {
-      _sessionValue.textContent = "Activa";
-      _sessionValue.style.color = "var(--success-color)";
+      _sessionValue.textContent = "Sesión Activa";
+      _sessionValue.style.color = "var(--health-good)";
     });
   }
   if (_stopBtnObs && _sessionValue) {

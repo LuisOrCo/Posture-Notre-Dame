@@ -1,131 +1,120 @@
-# 🧘 ErgoMonitor — Sistema de Monitoreo de Ergonomía Laboral
+# 🌿 Posture Notre Dame — Sistema de Salud y Monitoreo Ergonómico
 
-Sistema web para detectar y corregir malas posturas durante jornadas de teletrabajo, usando visión por computador con **MediaPipe Pose Estimation**.
+Plataforma inteligente de evaluación biomecánica y corrección postural en tiempo real para la prevención de trastornos musculoesqueléticos en jornadas laborales y teletrabajo, desarrollada con **Django**, **FastAPI**, **MediaPipe Pose Estimation** y **MongoDB**.
 
-## 🏗️ Arquitectura
+## 🏗️ Arquitectura del Sistema
 
 ```
 sistema-ergonomia-laboral/
-├── backend/        # FastAPI + MediaPipe + MongoDB
+├── backend/        # FastAPI + MediaPipe Pose + MongoDB (Evaluación Biomecánica)
 │   └── app/
 │       ├── api/routes/   # auth.py, posture.py
 │       ├── core/         # config, security (JWT + bcrypt)
 │       ├── schemas/      # Pydantic models
 │       ├── services/     # posture_analyzer, pose_detector, auth_service
-│       ├── database.py   # MongoDB client
-│       └── main.py       # FastAPI app entry point
-├── frontend/       # Django + SQLite (auth de sesión web)
-│   ├── accounts/   # Registro y login de usuarios
-│   ├── monitor/    # Dashboard de monitoreo
-│   ├── static/     # CSS + JS (camera.js)
-│   └── templates/  # HTML base + dashboard + auth
-├── vercel.json     # Configuración de deployment
+│       ├── database.py   # Conexión MongoDB
+│       └── main.py       # Entrada FastAPI & Swagger Docs
+├── frontend/       # Django (Portal de Salud y Monitoreo)
+│   ├── accounts/   # Registro y autenticación de usuarios
+│   ├── monitor/    # Panel clínico de monitoreo y proxy de estadísticas
+│   ├── static/     # CSS clínico verde salud + JS biométrico (camera.js)
+│   └── templates/  # Plantillas HTML responsivas (base, dashboard, auth)
+├── vercel.json     # Configuración de despliegue serverless
 └── README.md
 ```
 
-## 🚀 Funcionalidades
+## 🩺 Características Principales
 
 | Módulo | Descripción |
 |--------|-------------|
-| **Autenticación Django** | Registro, login y logout de usuarios con sesiones seguras |
-| **Captura de cámara** | Stream de webcam en JS, captura periódica de frames cada 3 s |
-| **Análisis postural** | MediaPipe Pose calcula el ángulo cuello/hombros y determina `good`/`bad` |
-| **Integración HTTP** | Django actúa como proxy hacia FastAPI para evitar CORS en el cliente |
-| **Estadísticas en tiempo real** | Panel de muestras acumuladas, porcentaje de buena/mala postura |
-| **Retry logic** | Reintentos automáticos con backoff ante fallos de red |
-| **Indicadores de UI** | Contador de sesión HH:MM:SS, badge de conexión, alertas animadas |
+| **Diseño Clínico & Ergonomía** | Interfaz profesional con paleta verde salud (bienestar, salud postural y medicina del trabajo) |
+| **Acceso Seguro** | Registro e inicio de sesión con control de accesos y sesiones autenticadas |
+| **Captura Biomecánica** | Transmisión de webcam y captura periódica optimizada (cada 3 s) |
+| **Evaluación de Ángulos** | Cálculo instantáneo del ángulo cuello/hombros con umbral clínico de 15.0° |
+| **Monitoreo Continuo** | Temporizador de sesión en vivo y feedback ergonómico inmediato |
+| **Métricas Acumuladas** | Panel de rendimiento: total de muestras, porcentaje óptimo y desalineado |
+| **Integración Resiliente** | Proxy HTTP Django ↔ FastAPI, soporte CSRF y reintentos con backoff exponencial |
 
-## ⚙️ Configuración Local
+## ⚙️ Configuración y Ejecución Local
 
-### Requisitos
+### Requisitos Previos
 - Python 3.10+
-- MongoDB (local o Atlas)
+- MongoDB (local o MongoDB Atlas)
 
-### Backend (FastAPI)
+---
 
-```bash
+### 1. Backend (FastAPI - Puerto 8000)
+
+```powershell
 cd backend
 python -m venv venv
-venv\Scripts\activate       # Windows
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Crea el archivo `backend/.env`:
+Crea o revisa `backend/.env`:
 ```env
 MONGODB_URI=mongodb://localhost:27017
 DB_NAME=ergonomia_db
-SECRET_KEY=tu_clave_secreta_jwt
+SECRET_KEY=clave_secreta_jwt_posture_notre_dame
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 ALLOWED_ORIGINS=http://localhost:8001,http://127.0.0.1:8001
 ```
 
-Levanta el servidor:
-```bash
+Inicia el servidor de análisis:
+```powershell
 uvicorn app.main:app --reload --port 8000
 ```
+*Documentación interactiva disponible en: [http://localhost:8000/docs](http://localhost:8000/docs)*
 
-Documentación interactiva disponible en: [http://localhost:8000/docs](http://localhost:8000/docs)
+---
 
-### Frontend (Django)
+### 2. Frontend (Django - Puerto 8001)
 
-```bash
+```powershell
 cd frontend
 python -m venv venv
-venv\Scripts\activate       # Windows
+venv\Scripts\activate
 pip install django
 python manage.py migrate
 python manage.py runserver 8001
 ```
 
-Accede en: [http://localhost:8001](http://localhost:8001)
+Accede al portal web en: **[http://localhost:8001](http://localhost:8001)**
 
-> **Nota:** El frontend Django corre en el puerto `8001` y el backend FastAPI en el `8000`.
+---
 
-## 🌐 Deploy en Vercel
+## 🌐 Despliegue en Producción (Vercel)
 
 1. Conecta el repositorio en [vercel.com](https://vercel.com)
-2. Configura las variables de entorno en el panel de Vercel:
+2. Define las siguientes variables de entorno:
 
 | Variable | Descripción |
 |----------|-------------|
-| `MONGODB_URI` | URI de conexión a MongoDB Atlas |
-| `DB_NAME` | Nombre de la base de datos |
-| `SECRET_KEY` | Clave JWT del backend |
-| `DJANGO_SECRET_KEY` | Clave secreta de Django |
-| `ALLOWED_ORIGINS` | Dominio de producción del frontend (ej: `https://mi-app.vercel.app`) |
-| `ALLOWED_HOSTS` | Dominio de producción de Django |
+| `MONGODB_URI` | Cadena de conexión a MongoDB Atlas |
+| `DB_NAME` | Nombre de base de datos |
+| `SECRET_KEY` | Clave JWT para el backend |
+| `DJANGO_SECRET_KEY` | Clave de seguridad de Django |
+| `ALLOWED_ORIGINS` | Dominio de producción (ej: `https://posture-notre-dame.vercel.app`) |
+| `ALLOWED_HOSTS` | Hosts permitidos de Django |
+| `FASTAPI_BASE_URL` | URL de la API en producción |
 
-3. El archivo `vercel.json` ya configura el routing automáticamente:
-   - `/api/*` → FastAPI backend
-   - `/health` → Health check del backend
-   - `/static/*` → Archivos estáticos
-   - `/*` → Django frontend
+---
 
 ## 📌 Endpoints API
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `POST` | `/api/v1/auth/register` | Registrar nuevo usuario |
-| `POST` | `/api/v1/auth/login` | Iniciar sesión (obtener JWT) |
-| `GET`  | `/api/v1/auth/me` | Perfil del usuario autenticado |
-| `POST` | `/api/v1/analyze-posture` | Analizar frame de cámara (Base64) |
-| `GET`  | `/api/v1/posture-stats` | Estadísticas acumuladas de postura |
-| `GET`  | `/health` | Estado de la API y base de datos |
+| `POST` | `/api/v1/auth/login` | Iniciar sesión y emitir token JWT |
+| `GET`  | `/api/v1/auth/me` | Obtener perfil del usuario autenticado |
+| `POST` | `/api/v1/analyze-posture` | Analizar frame en Base64 e inferir postura con MediaPipe |
+| `GET`  | `/api/v1/posture-stats` | Consultar estadísticas ergonómicas acumuladas |
+| `GET`  | `/health` | Chequeo de salud del servicio y MongoDB |
 
-## 📦 Commits del Proyecto
+---
 
-```
-1. init: estructura base django frontend y fastapi backend
-2. feat: modulo de autenticacion de usuario y control de acceso
-3. feat: carga e inferencia del modelo preentrenado en fastapi
-4. docs: esquemas pydantic y documentacion de endpoints en swagger
-5. feat: interfaz ui en django y captura de stream de camara en js
-6. feat: integracion http entre cliente django y servidor fastapi
-7. fix: optimizacion de respuesta, manejo de errores y ui polish
-8. deploy: configuracion vercel.json y pruebas finales de produccion
-```
+## 📜 Licencia
 
-## 📄 Licencia
-
-MIT License — [LuisOrCo/Posture-Notre-Dame](https://github.com/LuisOrCo/Posture-Notre-Dame)
+MIT License — **Posture Notre Dame** &bull; [LuisOrCo/Posture-Notre-Dame](https://github.com/LuisOrCo/Posture-Notre-Dame)

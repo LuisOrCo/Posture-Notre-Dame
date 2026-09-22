@@ -1,19 +1,16 @@
 /**
- * camera.js - Módulo de captura y stream de cámara web para ErgoMonitor
- * Commit 5: Captura de stream de cámara, envío periódico de frames al backend
- * Commit 6: Integración HTTP con CSRF token Django, proxy de estadísticas
- * Commit 7: Retry logic, manejo robusto de errores, contador de sesión en tiempo real
+ * camera.js - Módulo de evaluación ergonómica y captura para Posture Notre Dame
  */
 
 const CAPTURE_INTERVAL_MS = 3000;  // Envía un frame cada 3 segundos
 const STATS_INTERVAL_MS   = 10000; // Actualiza estadísticas cada 10 segundos
 const MAX_RETRIES = 2;             // Reintentos máximos por frame fallido
 
-const video       = document.getElementById("camera-feed");
-const canvas      = document.getElementById("capture-canvas");
-const startBtn    = document.getElementById("start-btn");
-const stopBtn     = document.getElementById("stop-btn");
-const statusBadge = document.getElementById("status-badge");
+const video         = document.getElementById("camera-feed");
+const canvas        = document.getElementById("capture-canvas");
+const startBtn      = document.getElementById("start-btn");
+const stopBtn       = document.getElementById("stop-btn");
+const statusBadge   = document.getElementById("status-badge");
 const postureValue  = document.getElementById("posture-value");
 const angleValue    = document.getElementById("angle-value");
 const messageValue  = document.getElementById("posture-message");
@@ -25,12 +22,12 @@ const statGoodPct   = document.getElementById("stat-good-pct");
 const statBadPct    = document.getElementById("stat-bad-pct");
 const connIndicator = document.getElementById("conn-indicator");
 
-let stream          = null;
-let captureInterval = null;
-let statsInterval   = null;
-let timerInterval   = null;
-let isRunning       = false;
-let sessionStart    = null;
+let stream            = null;
+let captureInterval   = null;
+let statsInterval     = null;
+let timerInterval     = null;
+let isRunning         = false;
+let sessionStart      = null;
 let consecutiveErrors = 0;
 
 // ─── CSRF token ──────────────────────────────────────────────────────────────
@@ -58,7 +55,7 @@ async function startCamera() {
     sessionStart = Date.now();
     startBtn.disabled = true;
     stopBtn.disabled  = false;
-    setStatus("Analizando postura...", "info");
+    setStatus("Analizando alineación...", "info");
     setConnectionStatus("online");
     hideAlert();
 
@@ -69,7 +66,7 @@ async function startCamera() {
     captureAndSend(); // Primer frame inmediato
 
   } catch (err) {
-    showAlert("No se pudo acceder a la cámara. Verifica los permisos del navegador.", "error");
+    showAlert("No se pudo acceder a la cámara. Por favor autoriza el permiso en tu navegador para evaluar tu postura.", "error");
     console.error("Error al acceder a la cámara:", err);
   }
 }
@@ -90,7 +87,7 @@ function stopCamera() {
 
   startBtn.disabled = false;
   stopBtn.disabled  = true;
-  setStatus("Monitoreo detenido", "idle");
+  setStatus("Monitoreo en pausa", "idle");
   setConnectionStatus("offline");
   resetMetrics();
   if (sessionTimer) sessionTimer.textContent = "00:00:00";
@@ -101,7 +98,7 @@ function stopCamera() {
 // ─── Captura frame ───────────────────────────────────────────────────────────
 function captureAndSend() {
   if (!isRunning || !video.srcObject) return;
-  if (video.videoWidth === 0) return; // Video aún no listo
+  if (video.videoWidth === 0) return;
 
   const ctx = canvas.getContext("2d");
   canvas.width  = video.videoWidth  || 640;
@@ -112,7 +109,7 @@ function captureAndSend() {
   sendFrameToAPI(imageBase64);
 }
 
-// ─── Enviar frame a FastAPI (con retry) ─────────────────────────────────────
+// ─── Enviar frame a FastAPI ─────────────────────────────────────────────────
 async function sendFrameToAPI(imageBase64, attempt = 1) {
   const apiUrl = window.FASTAPI_URL + "/api/v1/analyze-posture";
 
@@ -124,12 +121,12 @@ async function sendFrameToAPI(imageBase64, attempt = 1) {
         "X-CSRFToken": getCsrfToken(),
       },
       body: JSON.stringify({ image: imageBase64 }),
-      signal: AbortSignal.timeout(8000), // Timeout de 8 segundos
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.warn(`[Intento ${attempt}] Error del servidor:`, errorData.detail || response.status);
+      console.warn(`[Intento ${attempt}] Respuesta de servidor:`, errorData.detail || response.status);
       handleServerError(imageBase64, attempt);
       return;
     }
@@ -148,7 +145,7 @@ async function sendFrameToAPI(imageBase64, attempt = 1) {
 // ─── Manejo de errores con retry ─────────────────────────────────────────────
 function handleServerError(imageBase64, attempt) {
   if (attempt < MAX_RETRIES) {
-    const delay = attempt * 1500; // 1.5s, 3s…
+    const delay = attempt * 1500;
     setTimeout(() => sendFrameToAPI(imageBase64, attempt + 1), delay);
     return;
   }
@@ -158,10 +155,10 @@ function handleServerError(imageBase64, attempt) {
 
   if (consecutiveErrors >= 3) {
     showAlert(
-      "Sin conexión con el servidor de análisis. Comprueba que el backend está activo.",
+      "No hay comunicación con el módulo de inferencia. Verifica la disponibilidad del servidor de Posture Notre Dame.",
       "error"
     );
-    setStatus("Sin conexión", "bad");
+    setStatus("Servicio no disponible", "bad");
   }
 }
 
@@ -178,16 +175,13 @@ async function fetchStats() {
       signal: AbortSignal.timeout(6000),
     });
 
-    if (!response.ok) {
-      console.warn("Stats no disponibles:", response.status);
-      return;
-    }
+    if (!response.ok) return;
 
     const data = await response.json();
     updateStatsUI(data);
 
   } catch (err) {
-    console.warn("No se pudieron obtener estadísticas:", err.name);
+    console.warn("No se pudieron sincronizar las estadísticas:", err.name);
   }
 }
 
@@ -198,16 +192,16 @@ function updateUI(data) {
   angleValue.textContent = typeof angle === "number" ? angle.toFixed(1) + "°" : "—";
 
   if (posture === "good") {
-    postureValue.textContent = "✅ Buena";
-    postureValue.style.color = "var(--success-color)";
-    setStatus("Postura correcta", "good");
+    postureValue.textContent = "Alineación Óptima";
+    postureValue.style.color = "var(--health-good)";
+    setStatus("Postura Saludable", "good");
     hideAlert();
   } else {
-    postureValue.textContent = "⚠️ Mala";
-    postureValue.style.color = "var(--danger-color)";
-    setStatus("Postura incorrecta — ¡Corrígela!", "bad");
+    postureValue.textContent = "Inclinación Excesiva";
+    postureValue.style.color = "var(--health-bad)";
+    setStatus("Riesgo Ergonómico", "bad");
     showAlert(
-      message || "Inclinación excesiva. Ajusta la posición de tu cuello y espalda.",
+      message || "Alerta postural: Eleva tu cabeza y alinea los hombros para proteger la columna cervical.",
       "warning"
     );
   }
@@ -216,7 +210,7 @@ function updateUI(data) {
 }
 
 function updateStatsUI(data) {
-  if (statTotal)   statTotal.textContent   = data.total_samples ?? "—";
+  if (statTotal)   statTotal.textContent   = data.total_samples ?? "0";
   if (statGoodPct) statGoodPct.textContent = (data.good_percentage ?? 0).toFixed(1) + "%";
   if (statBadPct)  statBadPct.textContent  = (data.bad_percentage  ?? 0).toFixed(1) + "%";
 }
@@ -235,10 +229,10 @@ function updateSessionTimer() {
 function setConnectionStatus(status) {
   if (!connIndicator) return;
   if (status === "online") {
-    connIndicator.textContent = "● Conectado";
+    connIndicator.textContent = "● Sensor Conectado";
     connIndicator.className = "conn-badge conn-online";
   } else {
-    connIndicator.textContent = "● Sin conexión";
+    connIndicator.textContent = "● Sin Conexión";
     connIndicator.className = "conn-badge conn-offline";
   }
 }
@@ -252,9 +246,9 @@ function setStatus(text, type) {
 
 function resetMetrics() {
   postureValue.textContent = "—";
-  postureValue.style.color = "var(--text-muted)";
+  postureValue.style.color = "var(--text-light)";
   angleValue.textContent = "—";
-  if (messageValue) messageValue.textContent = "";
+  if (messageValue) messageValue.textContent = "Inicia la sesión para recibir retroalimentación médica inmediata.";
   setStatus("Inactivo", "idle");
 }
 

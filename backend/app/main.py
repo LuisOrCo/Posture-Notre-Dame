@@ -9,24 +9,24 @@ from app.core.config import TAGS_METADATA
 
 
 app = FastAPI(
-    title="API de Sistema de Monitoreo de Ergonomía Laboral",
+    title="Posture Notre Dame - API de Monitoreo Ergonómico y Salud Laboral",
     description="""
-# 🧘 Sistema de Monitoreo de Ergonomía Laboral
-API RESTful construida con **FastAPI**, **MediaPipe Pose Estimation** y **MongoDB** para prevenir lesiones posturales en jornadas de teletrabajo.
+# 🌿 Posture Notre Dame &bull; Sistema de Salud Postural y Ergonomía
+API RESTful construida con **FastAPI**, **MediaPipe Pose Estimation** y **MongoDB** para prevenir lesiones osteomusculares y corregir la postura en tiempo real.
 
 ## 🚀 Funcionalidades Principales:
-* **Autenticación Segura**: Registro e inicio de sesión con contraseñas encriptadas con `bcrypt` y firma de tokens `JWT`.
-* **Análisis Postural**: Inferencia mediante **MediaPipe Pose** para calcular el ángulo de inclinación de cuello y hombros en grados y detectar estados ergonómicos (`good` o `bad`).
-* **Estadísticas en Tiempo Real**: Reporte del tiempo acumulado y porcentaje de postura ergonómica correcta vs. incorrecta.
+* **Autenticación Médica / Usuario**: Registro e inicio de sesión con contraseñas encriptadas con `bcrypt` y firma de tokens `JWT`.
+* **Evaluación Biomecánica**: Inferencia mediante **MediaPipe Pose** para calcular el ángulo de inclinación de cuello y hombros en grados y detectar estados de salud postural (`good` o `bad`).
+* **Métricas Clínicas Acumuladas**: Reporte del tiempo acumulado y porcentaje de postura ergonómica óptima vs. desalineada.
 
 ## 📌 Documentación de Endpoints:
 * **`POST /api/v1/analyze-posture`**: Recibe un frame de la cámara web (Base64) y retorna `{"posture": "bad|good", "angle": 15.2}`.
-* **`GET /api/v1/posture-stats`**: Retorna el resumen del tiempo y porcentaje acumulado en buena vs. mala postura.
+* **`GET /api/v1/posture-stats`**: Retorna el resumen del tiempo y porcentaje acumulado de ergonomía.
 """,
     version="1.0.0",
     openapi_tags=TAGS_METADATA,
     contact={
-        "name": "Equipo de Desarrollo ErgoMonitor",
+        "name": "Equipo de Salud y Ergonomía Posture Notre Dame",
         "url": "https://github.com/LuisOrCo/Posture-Notre-Dame",
     },
     license_info={

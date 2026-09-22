@@ -1,52 +1,62 @@
 {% extends 'base.html' %}
 
-{% block title %}Iniciar Sesión - ErgoMonitor{% endblock %}
+{% block title %}Iniciar Sesión - Posture Notre Dame{% endblock %}
 
 {% block content %}
-<div class="auth-card">
-    <div class="auth-header">
-        <h2>Iniciar Sesión</h2>
-        <p>Ingresa tus credenciales para acceder al monitoreo ergonómico</p>
-    </div>
-
-    <form method="post" action="{% url 'login' %}">
-        {% csrf_token %}
-
-        {% if form.non_field_errors %}
-            <div class="alert alert-error">
-                {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                {% endfor %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon-badge">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
             </div>
-        {% endif %}
-
-        <div class="form-group">
-            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
-            {{ form.username }}
-            {% if form.username.errors %}
-                <div class="alert alert-error" style="margin-top: 0.25rem;">
-                    {{ form.username.errors.0 }}
-                </div>
-            {% endif %}
+            <h2>Acceso a Monitoreo</h2>
+            <p>Ingresa tus datos para evaluar y proteger tu salud postural diaria</p>
         </div>
 
-        <div class="form-group">
-            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
-            {{ form.password }}
-            {% if form.password.errors %}
-                <div class="alert alert-error" style="margin-top: 0.25rem;">
-                    {{ form.password.errors.0 }}
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
                 </div>
             {% endif %}
+
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Usuario o Identificador</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="alert alert-error" style="margin-top: 0.35rem;">
+                        {{ form.username.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}">Contraseña</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="alert alert-error" style="margin-top: 0.35rem;">
+                        {{ form.password.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.85rem;">
+                Ingresar al Panel
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>¿Nuevo en Posture Notre Dame? <a href="{% url 'register' %}">Crear cuenta de monitoreo</a></p>
         </div>
-
-        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.75rem;">
-            Ingresar
-        </button>
-    </form>
-
-    <div class="auth-footer">
-        <p>¿No tienes una cuenta? <a href="{% url 'register' %}">Regístrate aquí</a></p>
     </div>
 </div>
 {% endblock %}
