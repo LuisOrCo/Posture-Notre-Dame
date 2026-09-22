@@ -28,11 +28,13 @@ class LandmarkPoint:
 
 class PoseDetector:
     def __init__(self, model_filename: str = "pose_landmarker.task"):
-        # Buscar el archivo en la carpeta del servicio, en la raíz del backend o en el directorio actual
+        # Buscar el archivo en backend/models/, raíz del backend, o en el directorio actual
         current_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.abspath(os.path.join(current_dir, "..", ".."))
+        models_dir = os.path.join(backend_dir, "models")
         
         candidate_paths = [
+            os.path.join(models_dir, model_filename),
             os.path.join(backend_dir, model_filename),
             os.path.join(current_dir, model_filename),
             os.path.abspath(model_filename),
