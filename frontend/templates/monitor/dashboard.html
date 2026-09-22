@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - ErgoMonitor{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 2rem auto;">
+    <div style="background: white; border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h1 style="font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--text-color);">
+            Bienvenido al Panel de Monitoreo Ergonómico, {{ user.username }}! 👋
+        </h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">
+            Aquí podrás visualizar el análisis de tu postura en tiempo real mediante la cámara web.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem;">
+                <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Estado Actual</h3>
+                <p style="font-size: 1.25rem; font-weight: 700; color: var(--primary-color);">En espera de cámara</p>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem;">
+                <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ángulo de Inclinación</h3>
+                <p style="font-size: 1.25rem; font-weight: 700; color: var(--text-color);">0.0°</p>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem;">
+                <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Sesión Activa</h3>
+                <p style="font-size: 1.25rem; font-weight: 700; color: var(--success-color);">Conectado</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; padding: 3rem; background: #f1f5f9; border: 2px dashed var(--border-color); border-radius: 0.5rem;">
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 1rem;">
+                📷 Módulo de Captura e Inferencia (MediaPipe Pose) listo para integración en los siguientes commits.
+            </p>
+            <span class="btn-primary" style="opacity: 0.8; cursor: not-allowed;">Iniciar Monitoreo de Cámara</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

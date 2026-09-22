@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Monitoreo Ergonómico{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{% url 'root' %}" class="navbar-brand">
+            🧘 ErgoMonitor
+        </a>
+        <ul class="navbar-nav">
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+                <li style="color: var(--text-muted); font-size: 0.9rem;">
+                    👤 <strong>{{ user.username }}</strong>
+                </li>
+                <li>
+                    <a href="{% url 'logout' %}" class="btn-outline">Cerrar sesión</a>
+                </li>
+            {% else %}
+                <li><a href="{% url 'login' %}" class="nav-link">Iniciar sesión</a></li>
+                <li><a href="{% url 'register' %}" class="btn-primary">Registrarse</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <main class="container">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Sistema de Monitoreo de Ergonomía Laboral. Todos los derechos reservados.</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
