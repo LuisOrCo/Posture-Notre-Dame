@@ -158,6 +158,31 @@
   .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
   .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
+  /* Estadísticas de sesión */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-item .stat-num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-color);
+    display: block;
+  }
+
+  .stat-item .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   .welcome-card {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
@@ -227,6 +252,25 @@
       <div id="session-value" class="metric-value" style="font-size: 1rem; color: var(--text-muted);">Inactiva</div>
     </div>
 
+    <!-- Estadísticas acumuladas via proxy Django → FastAPI -->
+    <div class="metric-card">
+      <h3>📊 Estadísticas Acumuladas</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span id="stat-total" class="stat-num">—</span>
+          <span class="stat-label">Muestras</span>
+        </div>
+        <div class="stat-item">
+          <span id="stat-good-pct" class="stat-num" style="color: var(--success-color);">—</span>
+          <span class="stat-label">Buena</span>
+        </div>
+        <div class="stat-item">
+          <span id="stat-bad-pct" class="stat-num" style="color: var(--danger-color);">—</span>
+          <span class="stat-label">Mala</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Alerta dinámica -->
     <div id="alert-box"></div>
   </div>
@@ -240,15 +284,4 @@
   window.FASTAPI_URL = "{{ fastapi_url }}";
 </script>
 <script src="{% static 'js/camera.js' %}"></script>
-
-<script>
-  // Ocultar placeholder cuando la cámara esté activa
-  const videoFeed = document.getElementById("camera-feed");
-  const placeholder = document.getElementById("video-placeholder");
-  if (videoFeed) {
-    videoFeed.addEventListener("play", () => {
-      if (placeholder) placeholder.style.display = "none";
-    });
-  }
-</script>
 {% endblock %}

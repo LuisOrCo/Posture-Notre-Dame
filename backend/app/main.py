@@ -1,8 +1,11 @@
+import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import client
 from app.api.routes import auth, posture
 from app.core.config import TAGS_METADATA
+
 
 
 app = FastAPI(
@@ -31,9 +34,23 @@ API RESTful construida con **FastAPI**, **MediaPipe Pose Estimation** y **MongoD
     },
 )
 
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+# Orígenes permitidos: variable de entorno ALLOWED_ORIGINS (CSV) o localhost por defecto
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8001,http://127.0.0.1:8001")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRFToken"],
+)
+
 # Inclusión de routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(posture.router, prefix="/api/v1", tags=["posture"])
+
 
 
 @app.get("/", tags=["health"], summary="Verificar estado de la API")
