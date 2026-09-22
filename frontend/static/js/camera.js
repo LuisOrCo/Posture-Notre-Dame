@@ -2,43 +2,48 @@
  * camera.js - Módulo de captura y stream de cámara web para ErgoMonitor
  * Commit 5: Captura de stream de cámara, envío periódico de frames al backend
  * Commit 6: Integración HTTP con CSRF token Django, proxy de estadísticas
+ * Commit 7: Retry logic, manejo robusto de errores, contador de sesión en tiempo real
  */
 
-const CAPTURE_INTERVAL_MS = 3000; // Envía un frame cada 3 segundos
+const CAPTURE_INTERVAL_MS = 3000;  // Envía un frame cada 3 segundos
+const STATS_INTERVAL_MS   = 10000; // Actualiza estadísticas cada 10 segundos
+const MAX_RETRIES = 2;             // Reintentos máximos por frame fallido
 
-const video = document.getElementById("camera-feed");
-const canvas = document.getElementById("capture-canvas");
-const startBtn = document.getElementById("start-btn");
-const stopBtn = document.getElementById("stop-btn");
+const video       = document.getElementById("camera-feed");
+const canvas      = document.getElementById("capture-canvas");
+const startBtn    = document.getElementById("start-btn");
+const stopBtn     = document.getElementById("stop-btn");
 const statusBadge = document.getElementById("status-badge");
-const postureValue = document.getElementById("posture-value");
-const angleValue = document.getElementById("angle-value");
-const messageValue = document.getElementById("posture-message");
-const sessionValue = document.getElementById("session-value");
-const alertBox = document.getElementById("alert-box");
+const postureValue  = document.getElementById("posture-value");
+const angleValue    = document.getElementById("angle-value");
+const messageValue  = document.getElementById("posture-message");
+const sessionValue  = document.getElementById("session-value");
+const alertBox      = document.getElementById("alert-box");
+const sessionTimer  = document.getElementById("session-timer");
+const statTotal     = document.getElementById("stat-total");
+const statGoodPct   = document.getElementById("stat-good-pct");
+const statBadPct    = document.getElementById("stat-bad-pct");
+const connIndicator = document.getElementById("conn-indicator");
 
-// Elementos de estadísticas (añadidos en commit 7)
-const statTotal = document.getElementById("stat-total");
-const statGoodPct = document.getElementById("stat-good-pct");
-const statBadPct = document.getElementById("stat-bad-pct");
-
-let stream = null;
+let stream          = null;
 let captureInterval = null;
-let statsInterval = null;
-let isRunning = false;
+let statsInterval   = null;
+let timerInterval   = null;
+let isRunning       = false;
+let sessionStart    = null;
+let consecutiveErrors = 0;
 
-// ─── Leer CSRF token de la cookie de Django ─────────────────────────────────
+// ─── CSRF token ──────────────────────────────────────────────────────────────
 function getCsrfToken() {
   const name = "csrftoken";
-  const cookies = document.cookie.split(";");
-  for (let cookie of cookies) {
+  for (let cookie of document.cookie.split(";")) {
     const [key, value] = cookie.trim().split("=");
     if (key === name) return decodeURIComponent(value);
   }
   return "";
 }
 
-// ─── Iniciar cámara ────────────────────────────────────────────────────────────
+// ─── Iniciar cámara ──────────────────────────────────────────────────────────
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -49,65 +54,57 @@ async function startCamera() {
     await video.play();
 
     isRunning = true;
+    consecutiveErrors = 0;
+    sessionStart = Date.now();
     startBtn.disabled = true;
-    stopBtn.disabled = false;
-    sessionValue.textContent = "Activa";
-    sessionValue.style.color = "var(--success-color)";
+    stopBtn.disabled  = false;
     setStatus("Analizando postura...", "info");
+    setConnectionStatus("online");
     hideAlert();
 
-    // Iniciar captura periódica de frames
     captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
+    statsInterval   = setInterval(fetchStats, STATS_INTERVAL_MS);
+    timerInterval   = setInterval(updateSessionTimer, 1000);
 
-    // Enviar el primer frame inmediatamente
-    captureAndSend();
-
-    // Actualizar estadísticas cada 10 segundos mientras la sesión esté activa
-    statsInterval = setInterval(fetchStats, 10000);
+    captureAndSend(); // Primer frame inmediato
 
   } catch (err) {
-    showAlert(
-      "No se pudo acceder a la cámara. Verifica los permisos del navegador.",
-      "error"
-    );
+    showAlert("No se pudo acceder a la cámara. Verifica los permisos del navegador.", "error");
     console.error("Error al acceder a la cámara:", err);
   }
 }
 
-// ─── Detener cámara ────────────────────────────────────────────────────────────
+// ─── Detener cámara ──────────────────────────────────────────────────────────
 function stopCamera() {
   if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
+    stream.getTracks().forEach((t) => t.stop());
     stream = null;
   }
-  if (captureInterval) {
-    clearInterval(captureInterval);
-    captureInterval = null;
-  }
-  if (statsInterval) {
-    clearInterval(statsInterval);
-    statsInterval = null;
-  }
+  clearInterval(captureInterval);
+  clearInterval(statsInterval);
+  clearInterval(timerInterval);
+  captureInterval = statsInterval = timerInterval = null;
   video.srcObject = null;
   isRunning = false;
+  sessionStart = null;
 
   startBtn.disabled = false;
-  stopBtn.disabled = true;
-  sessionValue.textContent = "Inactiva";
-  sessionValue.style.color = "var(--text-muted)";
+  stopBtn.disabled  = true;
   setStatus("Monitoreo detenido", "idle");
+  setConnectionStatus("offline");
   resetMetrics();
+  if (sessionTimer) sessionTimer.textContent = "00:00:00";
 
-  // Obtener stats finales al detener
-  fetchStats();
+  fetchStats(); // Stats finales al detener
 }
 
-// ─── Captura frame y envía al backend ─────────────────────────────────────────
+// ─── Captura frame ───────────────────────────────────────────────────────────
 function captureAndSend() {
   if (!isRunning || !video.srcObject) return;
+  if (video.videoWidth === 0) return; // Video aún no listo
 
   const ctx = canvas.getContext("2d");
-  canvas.width = video.videoWidth || 640;
+  canvas.width  = video.videoWidth  || 640;
   canvas.height = video.videoHeight || 480;
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -115,8 +112,8 @@ function captureAndSend() {
   sendFrameToAPI(imageBase64);
 }
 
-// ─── Enviar frame a la API FastAPI (directo, con CSRF) ─────────────────────────
-async function sendFrameToAPI(imageBase64) {
+// ─── Enviar frame a FastAPI (con retry) ─────────────────────────────────────
+async function sendFrameToAPI(imageBase64, attempt = 1) {
   const apiUrl = window.FASTAPI_URL + "/api/v1/analyze-posture";
 
   try {
@@ -127,23 +124,48 @@ async function sendFrameToAPI(imageBase64) {
         "X-CSRFToken": getCsrfToken(),
       },
       body: JSON.stringify({ image: imageBase64 }),
+      signal: AbortSignal.timeout(8000), // Timeout de 8 segundos
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.warn("Error del servidor:", errorData.detail || response.status);
+      console.warn(`[Intento ${attempt}] Error del servidor:`, errorData.detail || response.status);
+      handleServerError(imageBase64, attempt);
       return;
     }
 
     const data = await response.json();
+    consecutiveErrors = 0;
+    setConnectionStatus("online");
     updateUI(data);
+
   } catch (err) {
-    console.error("Error de conexión con el servidor:", err);
-    showAlert("No se puede conectar con el servidor de análisis.", "error");
+    console.error(`[Intento ${attempt}] Error de conexión:`, err.name, err.message);
+    handleServerError(imageBase64, attempt);
   }
 }
 
-// ─── Obtener estadísticas via proxy Django ─────────────────────────────────────
+// ─── Manejo de errores con retry ─────────────────────────────────────────────
+function handleServerError(imageBase64, attempt) {
+  if (attempt < MAX_RETRIES) {
+    const delay = attempt * 1500; // 1.5s, 3s…
+    setTimeout(() => sendFrameToAPI(imageBase64, attempt + 1), delay);
+    return;
+  }
+
+  consecutiveErrors++;
+  setConnectionStatus("offline");
+
+  if (consecutiveErrors >= 3) {
+    showAlert(
+      "Sin conexión con el servidor de análisis. Comprueba que el backend está activo.",
+      "error"
+    );
+    setStatus("Sin conexión", "bad");
+  }
+}
+
+// ─── Estadísticas via proxy Django → FastAPI ─────────────────────────────────
 async function fetchStats() {
   try {
     const response = await fetch("/stats/", {
@@ -153,25 +175,28 @@ async function fetchStats() {
         "X-Requested-With": "XMLHttpRequest",
       },
       credentials: "same-origin",
+      signal: AbortSignal.timeout(6000),
     });
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      console.warn("Stats no disponibles:", response.status);
+      return;
+    }
 
     const data = await response.json();
     updateStatsUI(data);
+
   } catch (err) {
-    console.warn("No se pudieron obtener estadísticas:", err);
+    console.warn("No se pudieron obtener estadísticas:", err.name);
   }
 }
 
-// ─── Actualizar métricas en la UI ─────────────────────────────────────────────
+// ─── Actualizar métricas ──────────────────────────────────────────────────────
 function updateUI(data) {
   const { posture, angle, message } = data;
 
-  // Ángulo de inclinación
-  angleValue.textContent = angle.toFixed(1) + "°";
+  angleValue.textContent = typeof angle === "number" ? angle.toFixed(1) + "°" : "—";
 
-  // Estado de postura
   if (posture === "good") {
     postureValue.textContent = "✅ Buena";
     postureValue.style.color = "var(--success-color)";
@@ -180,28 +205,47 @@ function updateUI(data) {
   } else {
     postureValue.textContent = "⚠️ Mala";
     postureValue.style.color = "var(--danger-color)";
-    setStatus("Postura incorrecta - ¡Corrígela!", "bad");
+    setStatus("Postura incorrecta — ¡Corrígela!", "bad");
     showAlert(
       message || "Inclinación excesiva. Ajusta la posición de tu cuello y espalda.",
       "warning"
     );
   }
 
-  // Mensaje descriptivo
-  if (messageValue) {
-    messageValue.textContent = message || "";
+  if (messageValue) messageValue.textContent = message || "";
+}
+
+function updateStatsUI(data) {
+  if (statTotal)   statTotal.textContent   = data.total_samples ?? "—";
+  if (statGoodPct) statGoodPct.textContent = (data.good_percentage ?? 0).toFixed(1) + "%";
+  if (statBadPct)  statBadPct.textContent  = (data.bad_percentage  ?? 0).toFixed(1) + "%";
+}
+
+// ─── Contador de sesión HH:MM:SS ─────────────────────────────────────────────
+function updateSessionTimer() {
+  if (!sessionStart || !sessionTimer) return;
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const hh = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
+  sessionTimer.textContent = `${hh}:${mm}:${ss}`;
+}
+
+// ─── Indicador de conexión ────────────────────────────────────────────────────
+function setConnectionStatus(status) {
+  if (!connIndicator) return;
+  if (status === "online") {
+    connIndicator.textContent = "● Conectado";
+    connIndicator.className = "conn-badge conn-online";
+  } else {
+    connIndicator.textContent = "● Sin conexión";
+    connIndicator.className = "conn-badge conn-offline";
   }
 }
 
-// ─── Actualizar panel de estadísticas en la UI ────────────────────────────────
-function updateStatsUI(data) {
-  if (statTotal) statTotal.textContent = data.total_samples ?? "—";
-  if (statGoodPct) statGoodPct.textContent = (data.good_percentage ?? 0).toFixed(1) + "%";
-  if (statBadPct) statBadPct.textContent = (data.bad_percentage ?? 0).toFixed(1) + "%";
-}
-
-// ─── Helpers de UI ─────────────────────────────────────────────────────────────
+// ─── Helpers de UI ────────────────────────────────────────────────────────────
 function setStatus(text, type) {
+  if (!statusBadge) return;
   statusBadge.textContent = text;
   statusBadge.className = "status-badge status-" + type;
 }
@@ -228,18 +272,13 @@ function hideAlert() {
 
 // ─── Event listeners ──────────────────────────────────────────────────────────
 if (startBtn) startBtn.addEventListener("click", startCamera);
-if (stopBtn) stopBtn.addEventListener("click", stopCamera);
+if (stopBtn)  stopBtn.addEventListener("click", stopCamera);
 
-// Asegurar que la cámara se detiene si el usuario cierra la pestaña
-window.addEventListener("beforeunload", () => {
-  if (isRunning) stopCamera();
-});
+window.addEventListener("beforeunload", () => { if (isRunning) stopCamera(); });
 
-// Cargar estadísticas iniciales al entrar al dashboard
 document.addEventListener("DOMContentLoaded", () => {
   fetchStats();
 
-  // Ocultar placeholder cuando la cámara esté activa
   const placeholder = document.getElementById("video-placeholder");
   if (video && placeholder) {
     video.addEventListener("play", () => {
