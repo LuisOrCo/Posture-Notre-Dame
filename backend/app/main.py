@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.database import client
-from app.api.routes import auth
+from app.api.routes import auth, posture
 
 
 app = FastAPI(
@@ -11,6 +11,8 @@ app = FastAPI(
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(posture.router, prefix="/api/v1", tags=["posture"])
+
 
 
 
