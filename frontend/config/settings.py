@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-i!(r@5fld@23b@1k)&iy9hc&0zl-#20n&b89rv=z156u=qt39&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+# URL del backend FastAPI
+FASTAPI_BASE_URL = 'http://127.0.0.1:8000'
+
 
 
 # Application definition
