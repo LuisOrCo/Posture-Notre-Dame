@@ -11,8 +11,10 @@ from django.views.decorators.http import require_GET
 
 @login_required
 def dashboard_view(request):
+    jwt_token = request.session.get("jwt_token", "")
     context = {
         "fastapi_url": settings.FASTAPI_BASE_URL,
+        "jwt_token": jwt_token,
     }
     return render(request, "monitor/dashboard.html", context)
 
@@ -25,10 +27,13 @@ def posture_stats_view(request):
     y retorna el JSON directamente al cliente Django (para evitar CORS).
     """
     fastapi_url = settings.FASTAPI_BASE_URL + "/api/v1/posture-stats"
+    jwt_token = request.session.get("jwt_token", "")
 
     try:
         req = urllib.request.Request(fastapi_url, method="GET")
         req.add_header("Accept", "application/json")
+        if jwt_token:
+            req.add_header("Authorization", f"Bearer {jwt_token}")
 
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode("utf-8"))
@@ -44,3 +49,4 @@ def posture_stats_view(request):
             {"error": "Error interno al consultar estadísticas.", "detail": str(e)},
             status=500,
         )
+

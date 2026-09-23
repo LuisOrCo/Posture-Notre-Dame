@@ -34,7 +34,11 @@ def get_optional_user(token: Optional[str] = Depends(oauth2_scheme_optional)) ->
     username = payload.get("sub")
     if not username:
         return None
-    return get_user_by_username(username)
+    user = get_user_by_username(username)
+    if user:
+        return user
+    return {"username": username}
+
 
 
 @router.post(

@@ -598,6 +598,8 @@
 {% block extra_js %}
 <script>
   window.FASTAPI_URL = "{{ fastapi_url }}";
+  window.JWT_TOKEN = "{{ jwt_token }}";
+
 
   const _startBtn = document.getElementById("start-btn");
   const _spinner  = document.getElementById("cam-spinner");

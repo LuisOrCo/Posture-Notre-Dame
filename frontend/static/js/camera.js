@@ -114,12 +114,17 @@ async function sendFrameToAPI(imageBase64, attempt = 1) {
   const apiUrl = window.FASTAPI_URL + "/api/v1/analyze-posture";
 
   try {
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCsrfToken(),
+    };
+    if (window.JWT_TOKEN) {
+      headers["Authorization"] = `Bearer ${window.JWT_TOKEN}`;
+    }
+
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCsrfToken(),
-      },
+      headers: headers,
       body: JSON.stringify({ image: imageBase64 }),
       signal: AbortSignal.timeout(8000),
     });
@@ -135,12 +140,14 @@ async function sendFrameToAPI(imageBase64, attempt = 1) {
     consecutiveErrors = 0;
     setConnectionStatus("online");
     updateUI(data);
+    fetchStats(); // Actualizar el historial en tiempo real con la base de datos
 
   } catch (err) {
     console.error(`[Intento ${attempt}] Error de conexión:`, err.name, err.message);
     handleServerError(imageBase64, attempt);
   }
 }
+
 
 // ─── Manejo de errores con retry ─────────────────────────────────────────────
 function handleServerError(imageBase64, attempt) {
