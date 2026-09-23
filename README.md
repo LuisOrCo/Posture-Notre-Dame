@@ -2,6 +2,11 @@
 
 Plataforma inteligente de evaluación biomecánica y corrección postural en tiempo real para la prevención de trastornos musculoesqueléticos en jornadas laborales y teletrabajo, desarrollada con **Django**, **FastAPI**, **MediaPipe Pose Estimation** y **MongoDB**.
 
+# 👨‍🎓👨‍🎓 Aprendices que realizaron el proyecto de la ficha 3406204
+
+* ## Luis Ángel Ortega Correa
+* ## Breiner Ocampo Arteaga
+
 ---
 
 ## 🚀 Enlaces de Despliegue en Producción (Vercel)
