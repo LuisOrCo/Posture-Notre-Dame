@@ -71,10 +71,11 @@ def register_view(request):
                 return redirect("login")
             except urllib.error.HTTPError as e:
                 try:
-                    err_data = json.loads(e.read().decode("utf-8"))
-                    err_msg = err_data.get("detail", "Error en el servidor de autenticación.")
+                    raw_content = e.read().decode("utf-8")
+                    err_data = json.loads(raw_content)
+                    err_msg = err_data.get("detail", raw_content or f"Error {e.code}")
                 except Exception:
-                    err_msg = "Error al registrar en la base de datos."
+                    err_msg = f"Error HTTP {e.code}: {e.reason}"
                 messages.error(request, err_msg)
             except Exception as e:
                 messages.error(
@@ -108,10 +109,11 @@ def login_view(request):
                     messages.error(request, "Usuario o contraseña incorrectos.")
             except urllib.error.HTTPError as e:
                 try:
-                    err_data = json.loads(e.read().decode("utf-8"))
-                    err_msg = err_data.get("detail", "Usuario o contraseña incorrectos.")
+                    raw_content = e.read().decode("utf-8")
+                    err_data = json.loads(raw_content)
+                    err_msg = err_data.get("detail", raw_content or f"Error {e.code}")
                 except Exception:
-                    err_msg = "Usuario o contraseña incorrectos."
+                    err_msg = f"Error HTTP {e.code}: {e.reason}"
                 messages.error(request, err_msg)
             except Exception as e:
                 messages.error(request, f"Error al conectar con el servidor: {str(e)}")

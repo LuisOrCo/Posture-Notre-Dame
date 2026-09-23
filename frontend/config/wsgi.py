@@ -11,10 +11,14 @@ import os
 import sys
 from pathlib import Path
 
-# Asegurar que 'frontend' esté en sys.path para Vercel Serverless
-frontend_dir = str(Path(__file__).resolve().parent.parent)
-if frontend_dir not in sys.path:
-    sys.path.insert(0, frontend_dir)
+# Asegurar que 'frontend' y sus carpetas estén en sys.path para Vercel Serverless
+file_dir = Path(__file__).resolve().parent
+frontend_dir = str(file_dir.parent)
+repo_dir = str(file_dir.parent.parent)
+
+for d in [frontend_dir, str(file_dir), repo_dir]:
+    if d not in sys.path:
+        sys.path.insert(0, d)
 
 from django.core.wsgi import get_wsgi_application
 

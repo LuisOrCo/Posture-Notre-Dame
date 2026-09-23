@@ -79,6 +79,11 @@ def register(user_data: UserCreate):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error en base de datos MongoDB: {str(e)}",
+        )
 
 
 @router.post(
@@ -97,15 +102,23 @@ def login(user_data: UserLogin):
     - **username**: Nombre de usuario.
     - **password**: Contraseña asociada.
     """
-    user = authenticate_user(user_data)
-    if not user:
+    try:
+        user = authenticate_user(user_data)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Nombre de usuario o contraseña incorrectos.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token = create_access_token(data={"sub": user["username"]})
+        return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Nombre de usuario o contraseña incorrectos.",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error de conexión en MongoDB: {str(e)}",
         )
-    access_token = create_access_token(data={"sub": user["username"]})
-    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get(

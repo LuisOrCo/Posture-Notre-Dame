@@ -2,10 +2,14 @@ import os
 import sys
 from pathlib import Path
 
-# Asegurar que el directorio 'backend' esté en sys.path para Vercel Serverless
-backend_dir = str(Path(__file__).resolve().parent.parent)
-if backend_dir not in sys.path:
-    sys.path.insert(0, backend_dir)
+# Asegurar que tanto 'backend' como sus carpetas estén en sys.path para Vercel
+file_dir = Path(__file__).resolve().parent
+backend_dir = str(file_dir.parent)
+repo_dir = str(file_dir.parent.parent)
+
+for d in [backend_dir, str(file_dir), repo_dir]:
+    if d not in sys.path:
+        sys.path.insert(0, d)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
