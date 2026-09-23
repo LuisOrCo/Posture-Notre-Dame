@@ -1,4 +1,12 @@
 import os
+import sys
+from pathlib import Path
+
+# Asegurar que el directorio 'backend' esté en sys.path para Vercel Serverless
+backend_dir = str(Path(__file__).resolve().parent.parent)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,16 +43,16 @@ API RESTful construida con **FastAPI**, **MediaPipe Pose Estimation** y **MongoD
 )
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
-# Orígenes permitidos: variable de entorno ALLOWED_ORIGINS (CSV) o localhost por defecto
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8001,http://127.0.0.1:8001")
+# Orígenes permitidos: variable de entorno ALLOWED_ORIGINS (CSV) o defaults para desarrollo y Vercel
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000,http://localhost:8001,http://127.0.0.1:8001,*")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=ALLOWED_ORIGINS if "*" not in ALLOWED_ORIGINS else ["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-CSRFToken"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Inclusión de routers

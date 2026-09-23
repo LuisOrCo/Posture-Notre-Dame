@@ -28,20 +28,29 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # En producción, establece ALLOWED_HOSTS con el dominio de Vercel
-_raw_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+_raw_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.vercel.app,*')
 ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(',') if h.strip()]
 
-# URL del backend FastAPI (sobrescribible por variable de entorno en producción)
-FASTAPI_BASE_URL = os.environ.get('FASTAPI_BASE_URL', 'http://127.0.0.1:8000')
+# Dominios confiables para CSRF en Vercel
+_raw_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://*.vercel.app,https://*.now.sh,http://localhost:8000,http://127.0.0.1:8000,http://localhost:8001,http://127.0.0.1:8001')
+CSRF_TRUSTED_ORIGINS = [c.strip() for c in _raw_csrf.split(',') if c.strip()]
+
+# URL del backend FastAPI (en Vercel comparte el mismo dominio, por lo que una URL relativa o vacía funciona directamente)
+FASTAPI_BASE_URL = os.environ.get('FASTAPI_BASE_URL', '' if os.environ.get('VERCEL') else 'http://127.0.0.1:8000')
+
+
+# ─── Sesiones (Almacenamiento en Cookies firmadas, 100% independiente de SQL) ─
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 86400 * 7  # 7 días de sesión activa
 
 
 # ─── Aplicaciones instaladas ──────────────────────────────────────────────────
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
 
     # Apps del proyecto
@@ -51,10 +60,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.MongoAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -69,7 +79,6 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
         },
@@ -79,11 +88,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# ─── Base de datos ────────────────────────────────────────────────────────────
+# ─── Base de datos (No se utiliza SQL, toda la persistencia va a MongoDB) ────
+db_path = Path('/tmp') / 'db.sqlite3' if os.environ.get('VERCEL') else BASE_DIR / 'db.sqlite3'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': db_path,
     }
 }
 
@@ -109,8 +119,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
-# En producción se usará con `collectstatic`
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 
 # ─── Redirecciones de autenticación ──────────────────────────────────────────

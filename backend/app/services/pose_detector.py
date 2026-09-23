@@ -28,26 +28,29 @@ class LandmarkPoint:
 
 class PoseDetector:
     def __init__(self, model_filename: str = "pose_landmarker.task"):
-        # Buscar el archivo en backend/models/, raíz del backend, o en el directorio actual
+        # Buscar el archivo en backend/models/, raíz del backend, directorio actual o /tmp
         current_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.abspath(os.path.join(current_dir, "..", ".."))
         models_dir = os.path.join(backend_dir, "models")
+        tmp_path = os.path.join("/tmp", model_filename)
         
         candidate_paths = [
             os.path.join(models_dir, model_filename),
             os.path.join(backend_dir, model_filename),
             os.path.join(current_dir, model_filename),
             os.path.abspath(model_filename),
+            tmp_path,
         ]
         
-        self.model_path = candidate_paths[0]
+        self.model_path = None
         for path in candidate_paths:
             if os.path.exists(path):
                 self.model_path = path
                 break
 
-        # Descargar el modelo automáticamente si no existe en ninguna de las rutas
-        if not os.path.exists(self.model_path):
+        # Descargar el modelo automáticamente a /tmp si no existe en ninguna de las rutas (compatible con Vercel)
+        if not self.model_path or not os.path.exists(self.model_path):
+            self.model_path = tmp_path
             try:
                 logger.info(f"Descargando modelo de pose desde {MODEL_URL}...")
                 os.makedirs(os.path.dirname(self.model_path), exist_ok=True)

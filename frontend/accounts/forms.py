@@ -1,29 +1,28 @@
 from django import forms
-from django.contrib.auth.models import User
 
 
-class RegisterForm(forms.ModelForm):
+class RegisterForm(forms.Form):
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Nombre de usuario"}),
+        label="Nombre de usuario",
+        max_length=50,
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Correo electrónico"}),
+        label="Correo electrónico",
+    )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Contraseña"}),
-        label="Contraseña"
+        label="Contraseña",
+        min_length=6,
     )
-
     password_confirm = forms.CharField(
         widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Confirmar contraseña"}),
-        label="Confirmar contraseña"
+        label="Confirmar contraseña",
     )
-
-    class Meta:
-        model = User
-        fields = ["username", "email", "password"]
-        widgets = {
-            "username": forms.TextInput(attrs={"class": "form-control", "placeholder": "Nombre de usuario"}),
-            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "Correo electrónico"}),
-        }
 
     def clean(self):
         cleaned_data = super().clean()
-
         password = cleaned_data.get("password")
         password_confirm = cleaned_data.get("password_confirm")
 
