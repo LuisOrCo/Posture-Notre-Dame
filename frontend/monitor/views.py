@@ -9,11 +9,19 @@ from django.views.decorators.http import require_GET
 from accounts.middleware import mongo_login_required as login_required
 
 
+def _get_api_url(request, path: str) -> str:
+    base = (getattr(settings, "FASTAPI_BASE_URL", "") or "").strip()
+    if base:
+        return f"{base.rstrip('/')}{path}"
+    return request.build_absolute_uri(path)
+
+
 @login_required
 def dashboard_view(request):
     jwt_token = request.session.get("jwt_token", "")
+    fastapi_base = (getattr(settings, "FASTAPI_BASE_URL", "") or "").strip()
     context = {
-        "fastapi_url": settings.FASTAPI_BASE_URL,
+        "fastapi_url": fastapi_base,
         "jwt_token": jwt_token,
     }
     return render(request, "monitor/dashboard.html", context)
@@ -26,7 +34,7 @@ def posture_stats_view(request):
     Vista proxy: consulta el endpoint /api/v1/posture-stats de FastAPI
     y retorna el JSON directamente al cliente Django (para evitar CORS).
     """
-    fastapi_url = settings.FASTAPI_BASE_URL + "/api/v1/posture-stats"
+    fastapi_url = _get_api_url(request, "/api/v1/posture-stats")
     jwt_token = request.session.get("jwt_token", "")
 
     try:
@@ -35,7 +43,7 @@ def posture_stats_view(request):
         if jwt_token:
             req.add_header("Authorization", f"Bearer {jwt_token}")
 
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode("utf-8"))
             return JsonResponse(data)
 
@@ -49,4 +57,3 @@ def posture_stats_view(request):
             {"error": "Error interno al consultar estadísticas.", "detail": str(e)},
             status=500,
         )
-

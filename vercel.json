@@ -38,10 +38,6 @@
       "dest": "backend/app/main.py"
     },
     {
-      "src": "/static/(.*)",
-      "dest": "frontend/static/$1"
-    },
-    {
       "src": "/(.*)",
       "dest": "frontend/config/wsgi.py"
     }

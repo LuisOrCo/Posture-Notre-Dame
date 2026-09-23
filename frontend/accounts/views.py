@@ -8,9 +8,18 @@ from django.conf import settings
 from .forms import RegisterForm, LoginForm
 
 
-def _register_user_fastapi(username, email, password):
+def _get_api_url(request, path: str) -> str:
+    """Construye la URL absoluta para el endpoint de FastAPI."""
+    base = (getattr(settings, "FASTAPI_BASE_URL", "") or "").strip()
+    if base:
+        return f"{base.rstrip('/')}{path}"
+    # Si FASTAPI_BASE_URL está vacío en Vercel, generar la URL absoluta con el dominio actual
+    return request.build_absolute_uri(path)
+
+
+def _register_user_fastapi(request, username, email, password):
     """Registra el usuario en MongoDB a través del backend FastAPI."""
-    url = f"{settings.FASTAPI_BASE_URL}/api/v1/auth/register"
+    url = _get_api_url(request, "/api/v1/auth/register")
     payload = json.dumps({
         "username": username,
         "email": email,
@@ -22,13 +31,13 @@ def _register_user_fastapi(username, email, password):
         headers={"Content-Type": "application/json", "Accept": "application/json"},
         method="POST"
     )
-    with urllib.request.urlopen(req, timeout=5) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _login_user_fastapi(username, password):
+def _login_user_fastapi(request, username, password):
     """Autentica al usuario en FastAPI contra MongoDB y obtiene el token JWT."""
-    url = f"{settings.FASTAPI_BASE_URL}/api/v1/auth/login"
+    url = _get_api_url(request, "/api/v1/auth/login")
     payload = json.dumps({
         "username": username,
         "password": password
@@ -39,7 +48,7 @@ def _login_user_fastapi(username, password):
         headers={"Content-Type": "application/json", "Accept": "application/json"},
         method="POST"
     )
-    with urllib.request.urlopen(req, timeout=5) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         data = json.loads(resp.read().decode("utf-8"))
         return data.get("access_token")
 
@@ -57,7 +66,7 @@ def register_view(request):
 
             try:
                 # 1. Registrar únicamente en MongoDB a través de FastAPI
-                _register_user_fastapi(username, email, password)
+                _register_user_fastapi(request, username, email, password)
                 messages.success(request, "¡Cuenta creada exitosamente en MongoDB! Ahora puedes iniciar sesión.")
                 return redirect("login")
             except urllib.error.HTTPError as e:
@@ -89,7 +98,7 @@ def login_view(request):
             password = form.cleaned_data["password"]
 
             try:
-                token = _login_user_fastapi(username, password)
+                token = _login_user_fastapi(request, username, password)
                 if token:
                     request.session["jwt_token"] = token
                     request.session["username"] = username
