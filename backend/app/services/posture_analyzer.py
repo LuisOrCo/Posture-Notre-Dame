@@ -36,44 +36,73 @@ def calculate_neck_shoulder_angle(landmarks) -> float:
     return round(angle_deg, 1)
 
 
-def analyze_posture(image_base64: str, username: Optional[str] = None) -> Dict[str, Any]:
-    try:
-        img = detector_instance.decode_base64_image(image_base64)
-    except Exception as e:
-        raise ValueError(f"Error decodificando la imagen: {str(e)}")
+def process_posture_metric(
+    angle: Optional[float] = None,
+    posture: Optional[str] = None,
+    image_base64: Optional[str] = None,
+    message: Optional[str] = None,
+    username: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Procesa y registra métricas de postura en MongoDB:
+    - Si se envía 'angle' y 'posture' (inferido por MediaPipe Web en el cliente), se valida y registra directamente.
+    - Si se envía 'image_base64', se procesa con el detector local como fallback.
+    """
+    if angle is not None:
+        posture_status = posture or ("good" if angle <= ANGLE_THRESHOLD_DEGREES else "bad")
+        computed_angle = round(float(angle), 1)
+        if not message:
+            message = (
+                "Postura adecuada. Mantén la alineación ergonómica."
+                if posture_status == "good"
+                else f"Inclinación de cabeza/cuello excesiva ({computed_angle}° > {ANGLE_THRESHOLD_DEGREES}°). Corrige la postura."
+            )
+    elif image_base64:
+        try:
+            img = detector_instance.decode_base64_image(image_base64)
+        except Exception as e:
+            raise ValueError(f"Error decodificando la imagen: {str(e)}")
 
-    landmarks = detector_instance.detect_landmarks(img)
+        landmarks = detector_instance.detect_landmarks(img)
+        if not landmarks:
+            return {
+                "posture": "bad",
+                "angle": 0.0,
+                "message": "No se detectó silueta de persona o puntos de pose en el frame.",
+            }
 
-    if not landmarks:
-        return {
-            "posture": "bad",
-            "angle": 0.0,
-            "message": "No se detectó silueta de persona o puntos de pose en el frame.",
-        }
+        computed_angle = calculate_neck_shoulder_angle(landmarks)
+        posture_status = "good" if computed_angle <= ANGLE_THRESHOLD_DEGREES else "bad"
+        message = (
+            "Postura adecuada. Mantén la alineación ergonómica."
+            if posture_status == "good"
+            else f"Inclinación de cabeza/cuello excesiva ({computed_angle}° > {ANGLE_THRESHOLD_DEGREES}°). Corrige la postura."
+        )
+    else:
+        computed_angle = 0.0
+        posture_status = "bad"
+        message = "No se recibieron datos de ángulo ni imagen."
 
-    angle = calculate_neck_shoulder_angle(landmarks)
-    posture_status = "good" if angle <= ANGLE_THRESHOLD_DEGREES else "bad"
-    message = (
-        "Postura adecuada. Mantén la alineación ergonómica."
-        if posture_status == "good"
-        else f"Inclinación de cabeza/cuello excesiva ({angle}° > {ANGLE_THRESHOLD_DEGREES}°). Corrige la postura."
-    )
-
+    # Registro en MongoDB
     now = datetime.now(timezone.utc)
     if username:
         log_doc = {
             "username": username,
             "posture": posture_status,
-            "angle": angle,
+            "angle": computed_angle,
             "created_at": now,
         }
         posture_logs_collection.insert_one(log_doc)
 
     return {
         "posture": posture_status,
-        "angle": angle,
+        "angle": computed_angle,
         "message": message,
     }
+
+
+def analyze_posture(image_base64: str, username: Optional[str] = None) -> Dict[str, Any]:
+    return process_posture_metric(image_base64=image_base64, username=username)
 
 
 def get_posture_stats(username: Optional[str] = None) -> Dict[str, Any]:

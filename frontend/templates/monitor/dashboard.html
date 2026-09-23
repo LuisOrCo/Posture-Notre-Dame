@@ -198,9 +198,16 @@
     animation: spin 0.8s linear infinite;
   }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
-
   #capture-canvas { display: none; }
+  .pose-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transform: scaleX(-1);
+  }
 
   .camera-controls {
     display: flex;
@@ -493,6 +500,8 @@
       <div class="spinner" id="cam-spinner">
         <div class="spinner-ring"></div>
       </div>
+
+      <canvas id="pose-canvas" class="pose-overlay"></canvas>
     </div>
 
     <canvas id="capture-canvas"></canvas>
@@ -596,6 +605,11 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Google MediaPipe Pose CDN (Client-Side Neural Network) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
 <script>
   window.FASTAPI_URL = "{{ fastapi_url }}";
   window.JWT_TOKEN = "{{ jwt_token }}";

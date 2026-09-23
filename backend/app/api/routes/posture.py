@@ -8,7 +8,7 @@ from app.schemas.posture import (
     PostureStatsResponse,
 )
 from app.services.posture_analyzer import (
-    analyze_posture,
+    process_posture_metric,
     get_posture_stats,
 )
 from app.core.security import decode_access_token
@@ -45,8 +45,8 @@ def get_optional_user(token: Optional[str] = Depends(oauth2_scheme_optional)) ->
     "/analyze-posture",
     response_model=PostureResponse,
     status_code=status.HTTP_200_OK,
-    summary="Analizar frame de cámara e inferir postura laboral con MediaPipe Pose",
-    description="Procesa una captura de webcam en Base64, extrae los puntos de pose corporal con MediaPipe Pose, calcula la inclinación del cuello/hombros en grados y determina el estado de la postura ('good' o 'bad').",
+    summary="Registrar y analizar postura con MediaPipe Pose",
+    description="Recibe métricas biomecánicas inferidas en tiempo real con MediaPipe Pose o captura en Base64, calcula el estado y lo registra en MongoDB.",
     responses={
         200: {
             "description": "Análisis postural procesado correctamente.",
@@ -60,8 +60,8 @@ def get_optional_user(token: Optional[str] = Depends(oauth2_scheme_optional)) ->
                 }
             },
         },
-        400: {"description": "Error en la decodificación de la imagen Base64 enviada."},
-        500: {"description": "Error en la inferencia del modelo MediaPipe o procesamiento interno."},
+        400: {"description": "Datos de postura inválidos."},
+        500: {"description": "Error interno al procesar métricas."},
     },
 )
 def analyze_posture_endpoint(
@@ -69,12 +69,20 @@ def analyze_posture_endpoint(
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
     """
-    Analizar frame de cámara:
-    - **image**: Cadena Base64 representando la imagen capturada por la cámara del usuario.
+    Registrar y evaluar postura:
+    - **angle**: Ángulo en grados inferido por MediaPipe Pose.
+    - **posture**: 'good' o 'bad'.
+    - **image**: (Opcional) Captura Base64.
     """
     try:
         username = current_user["username"] if current_user else None
-        result = analyze_posture(request.image, username=username)
+        result = process_posture_metric(
+            angle=request.angle,
+            posture=request.posture,
+            image_base64=request.image,
+            message=request.message,
+            username=username,
+        )
         return result
     except ValueError as e:
         raise HTTPException(
@@ -84,7 +92,7 @@ def analyze_posture_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error en la inferencia del modelo: {str(e)}",
+            detail=f"Error en el procesamiento: {str(e)}",
         )
 
 

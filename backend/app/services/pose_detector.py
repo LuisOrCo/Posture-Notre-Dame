@@ -4,16 +4,17 @@ import urllib.request
 import logging
 import numpy as np
 import cv2
-import mediapipe as mp
 
 logger = logging.getLogger(__name__)
 
 try:
+    import mediapipe as mp
     from mediapipe.tasks.python import vision
     from mediapipe.tasks.python.core import base_options
     HAS_MEDIAPIPE_TASKS = True
 except Exception as e:
-    logger.warning(f"MediaPipe Tasks no disponible: {e}")
+    logger.info(f"MediaPipe no instalado o no disponible en este entorno: {e}")
+    mp = None
     HAS_MEDIAPIPE_TASKS = False
 
 MODEL_URL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"

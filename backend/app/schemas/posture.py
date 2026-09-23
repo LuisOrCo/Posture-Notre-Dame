@@ -3,16 +3,33 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class PostureRequest(BaseModel):
-    image: str = Field(
-        ...,
-        description="Imagen de la webcam en formato Base64 (data:image/jpeg;base64,... o texto plano base64)",
+    image: Optional[str] = Field(
+        None,
+        description="Imagen de la webcam en formato Base64 (opcional)",
         examples=["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/..."],
+    )
+    angle: Optional[float] = Field(
+        None,
+        description="Ángulo de inclinación en grados inferido por MediaPipe Pose en el cliente",
+        examples=[12.5],
+    )
+    posture: Optional[str] = Field(
+        None,
+        description="Estado de postura determinado por MediaPipe Pose ('good' o 'bad')",
+        examples=["good"],
+    )
+    message: Optional[str] = Field(
+        None,
+        description="Mensaje de retroalimentación ergonómica",
+        examples=["Postura adecuada. Mantén la alineación ergonómica."],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "image": "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+                "angle": 12.5,
+                "posture": "good",
+                "message": "Postura adecuada. Mantén la alineación ergonómica.",
             }
         }
     )
